@@ -18,10 +18,18 @@ func main() {
 
 	r := echo.New()
 	// Unprotected routes:
-	r.POST("/auth", ping)
-	r.POST("/login", ping)
+	r.POST("/auth/register", ping)
+	r.POST("/auth/login", ping)
+
 	// Protected routes:
-	//TODO: whatever
+	// any authorized user:
+	r.GET("/items", ping)     // get all items, may accept offset
+	r.GET("/items/:id", ping) // get a specific item
+	r.GET("/notice", ping)    // see if we run out of something.  TODO: rename it
+	// admin only:
+	r.POST("/items", ping)       // add a new item to tracking
+	r.PATCH("/items/:id", ping)  // change qty, description, etc.
+	r.DELETE("/items/:id", ping) // delete an item from tracking
 
 	if err := r.Start(os.Getenv("WAREHOUSE_SERVER_ADDR")); err != nil {
 		logger.Error("server error", zap.Error(err))
