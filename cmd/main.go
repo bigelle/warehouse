@@ -1,26 +1,47 @@
 package main
 
 import (
+	"context"
 	"os"
 
+	"github.com/bigelle/warehouse/internal/database"
+	"github.com/bigelle/warehouse/internal/handlers"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
 func main() {
+	// LOGGER:
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	if err := godotenv.Load("app.env"); err != nil {
-		logger.Error("failed to load environment variables", zap.Error(err))
+	// ENVIRONMENT:
+	if err := godotenv.Load(".env"); err != nil {
+		logger.Fatal("failed to load environment variables", zap.Error(err))
 	}
 
+	// DATABASE:
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		logger.Fatal("failed to connect to the database", zap.Error(err))
+	}
+	defer conn.Close(ctx)
+	db := database.New(conn)
+
+	//APP:
+	app := handlers.App{
+		Database: db,
+		Logger:   logger,
+	}
+
+	// ROUTER:
 	r := echo.New()
 	// Unprotected routes:
-	r.POST("/auth/register", ping)
+	r.POST("/auth/register", handlers.HandleRegister(&app))
 	r.POST("/auth/login", ping)
-
 	// Protected routes:
 	// any authorized user:
 	r.GET("/items", ping)     // get all items, may accept offset
@@ -31,8 +52,9 @@ func main() {
 	r.PATCH("/items/:id", ping)  // change qty, description, etc.
 	r.DELETE("/items/:id", ping) // delete an item from tracking
 
-	if err := r.Start(os.Getenv("WAREHOUSE_SERVER_ADDR")); err != nil {
-		logger.Error("server error", zap.Error(err))
+	// RUN:
+	if err := r.Start(os.Getenv("WAREHOUSE_LISTEN_ADDR")); err != nil {
+		logger.Fatal("server error", zap.Error(err))
 	}
 }
 
