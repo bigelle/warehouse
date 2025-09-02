@@ -31,7 +31,7 @@ func main() {
 	defer conn.Close(ctx)
 	db := database.New(conn)
 
-	//APP:
+	// APP:
 	app := handlers.App{
 		Database: db,
 		Logger:   logger,
@@ -41,7 +41,7 @@ func main() {
 	r := echo.New()
 	// Unprotected routes:
 	r.POST("/auth/register", handlers.HandleRegister(&app))
-	r.POST("/auth/login", ping)
+	r.POST("/auth/login", handlers.HandleLogin(&app))
 	// Protected routes:
 	// any authorized user:
 	r.GET("/items", ping)     // get all items, may accept offset

@@ -1,17 +1,40 @@
 package schemas
 
-type AccessLevel string
+type Role int
 
 const (
-	AccessLevelUser  AccessLevel = "user"
-	AccessLevelAdmin AccessLevel = "admin"
+	RoleUndefined Role = -1
+	RoleUser      Role = iota
+	RoleAdmin
 )
+
+func (r Role) String() string {
+	switch r {
+	case RoleUser:
+		return "user"
+	case RoleAdmin:
+		return "admin"
+	default:
+		return "undefined"
+	}
+}
+
+func RoleFromString(str string) Role {
+	switch str {
+	case "user":
+		return RoleUser
+	case "admin":
+		return RoleAdmin
+	default:
+		return RoleUndefined
+	}
+}
 
 type RegisterResponse struct {
 	Name string
-	Role AccessLevel
+	Role Role
 }
 
 type LoginResponse struct {
-	Name string //NOTE: do i need it? any of auth related stuff?
+	AccessToken string
 }

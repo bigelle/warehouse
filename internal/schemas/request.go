@@ -1,12 +1,11 @@
 package schemas
 
 type RegisterRequest struct {
-	//TODO: something something
-	Name     string
+	Username string
 	Password string
 }
 
 type LoginRequest struct {
-	Name     string
+	Username string
 	Password string
 }
