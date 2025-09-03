@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -45,4 +46,15 @@ func PgTypeText(txt string) pgtype.Text {
 		String: txt,
 		Valid:  true,
 	}
+}
+
+func UUIDFromString(str string) (pgtype.UUID, error) {
+	u, err := uuid.Parse(str)
+	if err != nil {
+		return pgtype.UUID{}, err
+	}
+	return pgtype.UUID{
+		Bytes: u,
+		Valid: true,
+	}, nil
 }

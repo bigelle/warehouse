@@ -43,16 +43,22 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getRefreshToken = `-- name: GetRefreshToken :one
-SELECT refresh_token
+SELECT id, role, refresh_token
 FROM users
 WHERE id = $1
 `
 
-func (q *Queries) GetRefreshToken(ctx context.Context, id pgtype.UUID) (string, error) {
+type GetRefreshTokenRow struct {
+	ID           pgtype.UUID
+	Role         string
+	RefreshToken string
+}
+
+func (q *Queries) GetRefreshToken(ctx context.Context, id pgtype.UUID) (GetRefreshTokenRow, error) {
 	row := q.db.QueryRow(ctx, getRefreshToken, id)
-	var refresh_token string
-	err := row.Scan(&refresh_token)
-	return refresh_token, err
+	var i GetRefreshTokenRow
+	err := row.Scan(&i.ID, &i.Role, &i.RefreshToken)
+	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
@@ -79,6 +85,24 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.Role,
 		&i.CreatedAt,
 	)
+	return i, err
+}
+
+const getUserRole = `-- name: GetUserRole :one
+SELECT id, role
+FROM users
+WHERE id = $1
+`
+
+type GetUserRoleRow struct {
+	ID   pgtype.UUID
+	Role string
+}
+
+func (q *Queries) GetUserRole(ctx context.Context, id pgtype.UUID) (GetUserRoleRow, error) {
+	row := q.db.QueryRow(ctx, getUserRole, id)
+	var i GetUserRoleRow
+	err := row.Scan(&i.ID, &i.Role)
 	return i, err
 }
 

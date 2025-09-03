@@ -42,6 +42,7 @@ func main() {
 	// Unprotected routes:
 	r.POST("/auth/register", handlers.HandleRegister(&app))
 	r.POST("/auth/login", handlers.HandleLogin(&app))
+	r.POST("/auth/refresh", handlers.HandleRefresh(&app))
 	// Protected routes:
 	// any authorized user:
 	r.GET("/items", ping)     // get all items, may accept offset

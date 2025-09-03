@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/bigelle/warehouse/internal/database"
 	"github.com/bigelle/warehouse/internal/schemas"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
@@ -106,11 +108,11 @@ func HandleLogin(app *App) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong username or password")
 		}
 
-		access, err := GenerateAccessJWT(usr.Username, usr.Role, app.Config.JWTAccessSecret, 15*time.Minute)
+		access, err := GenerateAccessJWT(usr.ID.String(), usr.Role, app.Config.JWTAccessSecret, 15*time.Minute)
 		if err != nil {
 			return err // nothing i can do
 		}
-		refresh, err := GenerateRefreshJWT(usr.Username, app.Config.JWTRefreshSecret, 7*24*time.Hour)
+		refresh, err := GenerateRefreshJWT(usr.ID.String(), app.Config.JWTRefreshSecret, 7*24*time.Hour)
 		if err != nil {
 			return err
 		}
@@ -127,7 +129,7 @@ func HandleLogin(app *App) echo.HandlerFunc {
 			// idk, it's not as bad, the user is logged in until access token expires,
 			// but can't refresh it so he will login again
 			if errors.Is(err, pgx.ErrNoRows) {
-				app.Logger.Error("setting refresh token for non-existing user", zap.String("id", usr.ID.String()))
+				app.Logger.Error("setting refresh token for non-existing user")
 			} else {
 				app.Logger.Error("unexpected error while setting refresh token", zap.Error(err))
 			}
@@ -142,6 +144,60 @@ func HandleLogin(app *App) echo.HandlerFunc {
 			SameSite: http.SameSiteStrictMode,
 			Expires:  time.Now().Add(7 * 24 * time.Hour),
 		})
+
+		return c.JSON(200, schemas.LoginResponse{
+			AccessToken: access,
+		})
+	}
+}
+
+func HandleRefresh(app *App) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Validating refresher:
+		refresh, err := c.Cookie("refresh-token")
+		if err != nil {
+			return echo.ErrUnauthorized
+		}
+		token, err := jwt.Parse(refresh.Value, func(t *jwt.Token) (any, error) {
+			return app.Config.JWTRefreshSecret, nil
+		})
+		if err != nil {
+			return echo.ErrUnauthorized
+		}
+		refreshClaims := token.Claims.(jwt.MapClaims)
+		expires, err := refreshClaims.GetExpirationTime()
+		if err != nil {
+			return err
+		}
+		if time.Now().After(expires.Time) {
+			return echo.ErrUnauthorized
+		}
+
+		// Getting uuid:
+		subj, err := refreshClaims.GetSubject()
+		if err != nil {
+			return err
+		}
+		uuid, err := UUIDFromString(subj)
+		if err != nil {
+			return err
+		}
+
+		// Generating access:
+		ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+		defer cancel()
+		usrRole, err := app.Database.GetUserRole(ctx, uuid)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				fmt.Println("no records")
+				return echo.ErrUnauthorized
+			}
+			return err
+		}
+		access, err := GenerateAccessJWT(usrRole.ID.String(), usrRole.Role, app.Config.JWTAccessSecret, 15*time.Minute)
+		if err != nil {
+			return err
+		}
 
 		return c.JSON(200, schemas.LoginResponse{
 			AccessToken: access,

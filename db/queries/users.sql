@@ -9,7 +9,7 @@ FROM users
 WHERE username = $1;
 
 -- name: GetRefreshToken :one
-SELECT refresh_token
+SELECT id, role, refresh_token
 FROM users
 WHERE id = $1;
 
@@ -18,3 +18,8 @@ UPDATE users
 SET refresh_token = $1
 WHERE id = $2
 RETURNING id;
+
+-- name: GetUserRole :one
+SELECT id, role
+FROM users
+WHERE id = $1;
