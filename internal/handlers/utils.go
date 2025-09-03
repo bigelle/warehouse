@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,4 +38,11 @@ func GenerateRefreshJWT(id string, secret []byte, expires time.Duration) (string
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	return token.SignedString(secret)
+}
+
+func PgTypeText(txt string) pgtype.Text {
+	return pgtype.Text{
+		String: txt,
+		Valid:  true,
+	}
 }

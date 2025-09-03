@@ -1,5 +1,11 @@
 package schemas
 
+import (
+	"sync"
+
+	"github.com/go-playground/validator/v10"
+)
+
 type Role int
 
 const (
@@ -28,6 +34,18 @@ func RoleFromString(str string) Role {
 	default:
 		return RoleUndefined
 	}
+}
+
+var (
+	valid *validator.Validate
+	once  = &sync.Once{}
+)
+
+func Validator() *validator.Validate {
+	once.Do(func() {
+		valid = validator.New()
+	})
+	return valid
 }
 
 type RegisterResponse struct {

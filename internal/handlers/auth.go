@@ -14,13 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO: move it somewhere else
-type App struct {
-	Database *database.Queries
-	// Cache
-	Logger *zap.Logger
-}
-
 const (
 	TimeoutDatabase = 500 * time.Millisecond
 )
@@ -97,6 +90,8 @@ func HandleLogin(app *App) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "bad request")
 		}
 
+		//TODO: validating things
+
 		ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 		defer cancel()
 		usr, err := app.Database.GetUserByUsername(ctx, req.Username)
@@ -111,15 +106,31 @@ func HandleLogin(app *App) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong username or password")
 		}
 
-		//FIXME: add app config and get JWT secret from there
-		access, err := GenerateAccessJWT(usr.Username, usr.Role, []byte("bibaboba"), 15*time.Minute)
+		access, err := GenerateAccessJWT(usr.Username, usr.Role, app.Config.JWTAccessSecret, 15*time.Minute)
 		if err != nil {
 			return err // nothing i can do
 		}
-		// FIXME: same here
-		refresh, err := GenerateRefreshJWT(usr.Username, []byte("bibaboba"), 7*24*time.Hour)
+		refresh, err := GenerateRefreshJWT(usr.Username, app.Config.JWTRefreshSecret, 7*24*time.Hour)
 		if err != nil {
 			return err
+		}
+
+		// NOTE: maybe i can do it in parallel
+		cancel()
+		ctx, cancel = context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+		defer cancel()
+		_, err = app.Database.SetRefreshToken(ctx, database.SetRefreshTokenParams{
+			RefreshToken: refresh,
+			ID:           usr.ID,
+		})
+		if err != nil {
+			// idk, it's not as bad, the user is logged in until access token expires,
+			// but can't refresh it so he will login again
+			if errors.Is(err, pgx.ErrNoRows) {
+				app.Logger.Error("setting refresh token for non-existing user", zap.String("id", usr.ID.String()))
+			} else {
+				app.Logger.Error("unexpected error while setting refresh token", zap.Error(err))
+			}
 		}
 
 		c.SetCookie(&http.Cookie{

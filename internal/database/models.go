@@ -17,5 +17,6 @@ type User struct {
 	Username     string
 	PasswordHash string
 	Role         string
+	RefreshToken string
 	CreatedAt    pgtype.Timestamptz
 }

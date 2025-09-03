@@ -42,15 +42,36 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const getRefreshToken = `-- name: GetRefreshToken :one
+SELECT refresh_token
+FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetRefreshToken(ctx context.Context, id pgtype.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getRefreshToken, id)
+	var refresh_token string
+	err := row.Scan(&refresh_token)
+	return refresh_token, err
+}
+
 const getUserByUsername = `-- name: GetUserByUsername :one
 SELECT id, username, password_hash, role, created_at
 FROM users
 WHERE username = $1
 `
 
-func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User, error) {
+type GetUserByUsernameRow struct {
+	ID           pgtype.UUID
+	Username     string
+	PasswordHash string
+	Role         string
+	CreatedAt    pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error) {
 	row := q.db.QueryRow(ctx, getUserByUsername, username)
-	var i User
+	var i GetUserByUsernameRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
@@ -59,4 +80,23 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const setRefreshToken = `-- name: SetRefreshToken :one
+UPDATE users
+SET refresh_token = $1
+WHERE id = $2
+RETURNING id
+`
+
+type SetRefreshTokenParams struct {
+	RefreshToken string
+	ID           pgtype.UUID
+}
+
+func (q *Queries) SetRefreshToken(ctx context.Context, arg SetRefreshTokenParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, setRefreshToken, arg.RefreshToken, arg.ID)
+	var id pgtype.UUID
+	err := row.Scan(&id)
+	return id, err
 }
