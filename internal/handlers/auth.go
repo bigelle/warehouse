@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bigelle/warehouse/internal/database"
@@ -136,7 +136,7 @@ func HandleLogin(app *App) echo.HandlerFunc {
 		}
 
 		c.SetCookie(&http.Cookie{
-			Name:     "refresh-token",
+			Name:     "refresh",
 			Value:    refresh,
 			Path:     "/refresh",
 			HttpOnly: true,
@@ -154,7 +154,7 @@ func HandleLogin(app *App) echo.HandlerFunc {
 func HandleRefresh(app *App) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Validating refresher:
-		refresh, err := c.Cookie("refresh-token")
+		refresh, err := c.Cookie("refresh")
 		if err != nil {
 			return echo.ErrUnauthorized
 		}
@@ -189,7 +189,6 @@ func HandleRefresh(app *App) echo.HandlerFunc {
 		usrRole, err := app.Database.GetUserRole(ctx, uuid)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
-				fmt.Println("no records")
 				return echo.ErrUnauthorized
 			}
 			return err
@@ -202,5 +201,44 @@ func HandleRefresh(app *App) echo.HandlerFunc {
 		return c.JSON(200, schemas.LoginResponse{
 			AccessToken: access,
 		})
+	}
+}
+
+// FIXME: maybe i should've used assigned methods... FUNC URSELF
+func JWTMiddleware(app *App) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			auth := c.Request().Header.Get("Authorization")
+			if auth == "" {
+				return echo.ErrUnauthorized
+			}
+			parts := strings.SplitN(auth, " ", 2)
+
+			// testing for bad format:
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				return echo.ErrUnauthorized
+			}
+
+			// parsing
+			usr, err := jwt.Parse(parts[1], func(t *jwt.Token) (any, error) {
+				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, echo.ErrUnauthorized
+				}
+				return app.Config.JWTAccessSecret, nil
+			})
+			if err != nil || !usr.Valid {
+				return echo.ErrUnauthorized
+			}
+			claims, ok := usr.Claims.(jwt.MapClaims)
+			if !ok {
+				return echo.ErrUnauthorized
+			}
+
+			// setting
+			c.Set("userID", claims["sub"])
+			c.Set("userRole", claims["role"])
+
+			return next(c)
+		}
 	}
 }
