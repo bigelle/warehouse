@@ -32,10 +32,30 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.items (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
-    quantity integer DEFAULT 0 NOT NULL
+    quantity integer DEFAULT 0 NOT NULL,
+    id bigint NOT NULL,
+    uuid uuid
 );
+
+
+--
+-- Name: items_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.items_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: items_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.items_id_seq OWNED BY public.items.id;
 
 
 --
@@ -60,6 +80,13 @@ CREATE TABLE public.users (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT users_role_check CHECK ((role = ANY (ARRAY['admin'::text, 'user'::text])))
 );
+
+
+--
+-- Name: items id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.items ALTER COLUMN id SET DEFAULT nextval('public.items_id_seq'::regclass);
 
 
 --
@@ -105,4 +132,5 @@ ALTER TABLE ONLY public.users
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250903071800'),
-    ('20250903095506');
+    ('20250903095506'),
+    ('20250904141852');

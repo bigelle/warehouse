@@ -43,7 +43,7 @@ func HandleRegister(app *App) echo.HandlerFunc {
 		// hashing
 		hash, err := HashPassword(req.Password)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest)
+			return err
 		}
 
 		// creating user
@@ -69,11 +69,11 @@ func HandleRegister(app *App) echo.HandlerFunc {
 					return echo.NewHTTPError(http.StatusBadRequest, "null value")
 				default:
 					app.Logger.Error("unexpected database error while creating user", zap.String("code", pgErr.Code))
-					return echo.NewHTTPError(http.StatusInternalServerError) // 500 for now, maybe I'll leave it like that
+					return err // 500 for now, maybe I'll leave it like that
 				}
 			}
 			app.Logger.Error("unexpected database error while creating user", zap.String("code", pgErr.Code))
-			return echo.NewHTTPError(http.StatusInternalServerError)
+			return err
 		}
 
 		return c.JSON(200, schemas.RegisterResponse{
@@ -153,25 +153,22 @@ func HandleLogin(app *App) echo.HandlerFunc {
 
 func HandleRefresh(app *App) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Validating refresher:
 		refresh, err := c.Cookie("refresh")
 		if err != nil {
 			return echo.ErrUnauthorized
 		}
+
+		// Validating refresher:
 		token, err := jwt.Parse(refresh.Value, func(t *jwt.Token) (any, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, echo.ErrUnauthorized
+			}
 			return app.Config.JWTRefreshSecret, nil
 		})
-		if err != nil {
+		if err != nil || !token.Valid {
 			return echo.ErrUnauthorized
 		}
 		refreshClaims := token.Claims.(jwt.MapClaims)
-		expires, err := refreshClaims.GetExpirationTime()
-		if err != nil {
-			return err
-		}
-		if time.Now().After(expires.Time) {
-			return echo.ErrUnauthorized
-		}
 
 		// Getting uuid:
 		subj, err := refreshClaims.GetSubject()
@@ -220,23 +217,23 @@ func JWTMiddleware(app *App) echo.MiddlewareFunc {
 			}
 
 			// parsing
-			usr, err := jwt.Parse(parts[1], func(t *jwt.Token) (any, error) {
+			token, err := jwt.Parse(parts[1], func(t *jwt.Token) (any, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, echo.ErrUnauthorized
 				}
 				return app.Config.JWTAccessSecret, nil
 			})
-			if err != nil || !usr.Valid {
+			if err != nil || !token.Valid {
 				return echo.ErrUnauthorized
 			}
-			claims, ok := usr.Claims.(jwt.MapClaims)
+			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
 				return echo.ErrUnauthorized
 			}
 
 			// setting
 			c.Set("userID", claims["sub"])
-			c.Set("userRole", claims["role"])
+			c.Set("userRole", schemas.RoleFromString(claims["role"].(string)))
 
 			return next(c)
 		}

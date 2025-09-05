@@ -8,6 +8,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Item struct {
+	Name     string
+	Quantity int32
+	ID       int64
+	Uuid     pgtype.UUID
+}
+
 type SchemaMigration struct {
 	Version string
 }

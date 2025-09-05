@@ -45,9 +45,9 @@ func main() {
 	r.POST("/auth/refresh", handlers.HandleRefresh(&app))
 	// Protected routes:
 	// any authorized user:
-	r.GET("/items", ping)     // get all items, may accept offset
-	r.GET("/items/:id", ping) // get a specific item
-	r.GET("/notice", ping)    // see if we run out of something.  TODO: rename it
+	r.GET("/items", handlers.HandleGetItems(&app), handlers.JWTMiddleware(&app)) // get all items, may accept offset
+	r.GET("/items/:id", ping)                                                    // get a specific item
+	r.GET("/notice", ping)                                                       // see if we run out of something.  TODO: rename it
 	// admin only:
 	r.POST("/items", ping)       // add a new item to tracking
 	r.PATCH("/items/:id", ping)  // change qty, description, etc.

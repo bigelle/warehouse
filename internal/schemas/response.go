@@ -56,3 +56,14 @@ type RegisterResponse struct {
 type LoginResponse struct {
 	AccessToken string
 }
+
+type GetItemsResponse struct {
+	NResults int
+	Items    []Item
+}
+
+type Item struct {
+	ID       string
+	Name     string
+	Quantity int
+}
