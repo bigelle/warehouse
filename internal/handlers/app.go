@@ -13,8 +13,6 @@ type App struct {
 	Config Config
 }
 
-//TODO: maybe some shorteners for logging or shi
-
 type Config struct {
 	JWTAccessSecret  []byte
 	JWTRefreshSecret []byte

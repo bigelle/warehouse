@@ -40,14 +40,14 @@ func main() {
 	// ROUTER:
 	r := echo.New()
 	// Unprotected routes:
-	r.POST("/auth/register", handlers.HandleRegister(&app))
-	r.POST("/auth/login", handlers.HandleLogin(&app))
-	r.POST("/auth/refresh", handlers.HandleRefresh(&app))
+	r.POST("/auth/register", app.HandleRegister)
+	r.POST("/auth/login", app.HandleLogin)
+	r.POST("/auth/refresh", app.HandleRefresh)
 	// Protected routes:
 	// any authorized user:
-	r.GET("/items", handlers.HandleGetItems(&app), handlers.JWTMiddleware(&app)) // get all items, may accept offset
-	r.GET("/items/:id", ping)                                                    // get a specific item
-	r.GET("/notice", ping)                                                       // see if we run out of something.  TODO: rename it
+	r.GET("/items", app.HandleGetItems, app.JWTMiddleware) // get all items, may accept offset
+	r.GET("/items/:id", ping)                              // get a specific item
+	r.GET("/notice", ping)                                 // see if we run out of something.  TODO: rename it
 	// admin only:
 	r.POST("/items", ping)       // add a new item to tracking
 	r.PATCH("/items/:id", ping)  // change qty, description, etc.
