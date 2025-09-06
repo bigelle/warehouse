@@ -20,14 +20,14 @@ func (app App) HandleGetItems(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	if req.Limit == nil {
-		req.Limit = &schemas.GetItemsRequestDefaultLimit
+	if req.Limit == 0 {
+		req.Limit = schemas.GetItemsRequestDefaultLimit
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
 	found, err := app.Database.GetNItemsOffset(ctx, database.GetNItemsOffsetParams{
-		Limit:  int32(*req.Limit),
+		Limit:  int32(req.Limit),
 		Offset: int32(req.Offset),
 	})
 	if err != nil {
@@ -45,7 +45,7 @@ func (app App) HandleGetItems(c echo.Context) error {
 	items := make([]schemas.Item, nFound)
 	for i := range nFound {
 		items[i] = schemas.Item{
-			ID:       found[i].Uuid.String(),
+			UUID:     found[i].Uuid.String(),
 			Name:     found[i].Name,
 			Quantity: int(found[i].Quantity),
 		}

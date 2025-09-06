@@ -76,8 +76,8 @@ func (app App) HandleRegister(c echo.Context) error {
 	}
 
 	return c.JSON(200, schemas.RegisterResponse{
-		Name: usr.Username,
-		Role: schemas.RoleFromString(usr.Role),
+		Username: usr.Username,
+		Role:     schemas.RoleFromString(usr.Role),
 	})
 
 }
