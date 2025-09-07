@@ -46,12 +46,12 @@ func main() {
 	// Protected routes:
 	// any authorized user:
 	r.GET("/items", app.HandleGetItems, app.JWTMiddleware) // get all items, may accept offset
-	r.GET("/items/:id", ping)                              // get a specific item
+	r.GET("/items/:uuid", ping)                            // get a specific item
 	r.GET("/notice", ping)                                 // see if we run out of something.  TODO: rename it
 	// admin only:
-	r.POST("/items", ping)       // add a new item to tracking
-	r.PATCH("/items/:id", ping)  // change qty, description, etc.
-	r.DELETE("/items/:id", ping) // delete an item from tracking
+	r.POST("/items", app.HandleCreateItem, app.JWTMiddleware) // add a new item to tracking
+	r.PATCH("/items/:id", ping)                               // change qty, description, etc.
+	r.DELETE("/items/:id", ping)                              // delete an item from tracking
 
 	// RUN:
 	if err := r.Start(os.Getenv("WAREHOUSE_LISTEN_ADDR")); err != nil {

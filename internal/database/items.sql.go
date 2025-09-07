@@ -7,10 +7,31 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createItem = `-- name: CreateItem :one
+INSERT INTO items (name)
+VALUES ($1)
+RETURNING uuid, name, created_at
+`
+
+type CreateItemRow struct {
+	Uuid      pgtype.UUID
+	Name      string
+	CreatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) CreateItem(ctx context.Context, name string) (CreateItemRow, error) {
+	row := q.db.QueryRow(ctx, createItem, name)
+	var i CreateItemRow
+	err := row.Scan(&i.Uuid, &i.Name, &i.CreatedAt)
+	return i, err
+}
+
 const getNItemsOffset = `-- name: GetNItemsOffset :many
-SELECT name, quantity, id, uuid
+SELECT id, uuid, name, created_at, updated_at
 FROM items
 ORDER BY id
 LIMIT $1 OFFSET $2
@@ -31,10 +52,11 @@ func (q *Queries) GetNItemsOffset(ctx context.Context, arg GetNItemsOffsetParams
 	for rows.Next() {
 		var i Item
 		if err := rows.Scan(
-			&i.Name,
-			&i.Quantity,
 			&i.ID,
 			&i.Uuid,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

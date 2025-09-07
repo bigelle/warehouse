@@ -23,21 +23,10 @@ const (
 func (app App) HandleRegister(c echo.Context) error {
 	var req schemas.RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return c.NoContent(http.StatusBadRequest)
+		app.Logger.Error("binding error", zap.Error(err))
+		return echo.ErrBadRequest
 	}
-
-	//TODO: validating things
-
-	// preventing duplicates
-	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
-	defer cancel()
-	_, err := app.Database.GetUserByUsername(ctx, req.Username)
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			app.Logger.Error("finding user", zap.Error(err))
-			return err
-		}
-	}
+	// TODO: validating things
 
 	// hashing
 	hash, err := HashPassword(req.Password)
@@ -46,14 +35,13 @@ func (app App) HandleRegister(c echo.Context) error {
 	}
 
 	// creating user
-	cancel() // JUST IN CASE
-	ctx, cancel = context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
 	usr, err := app.Database.CreateUser(ctx,
 		database.CreateUserParams{
 			Username:     req.Username,
 			PasswordHash: hash,
-			Role:         schemas.RoleUser.String(),
+			Role:         req.Role.String(),
 		},
 	)
 	if err != nil {
@@ -61,7 +49,7 @@ func (app App) HandleRegister(c echo.Context) error {
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
 			case "23505":
-				return echo.NewHTTPError(http.StatusBadRequest, "user already exists")
+				return echo.ErrConflict
 			case "23514":
 				return echo.NewHTTPError(http.StatusBadRequest, "invalid role type")
 			case "23502":
@@ -77,9 +65,9 @@ func (app App) HandleRegister(c echo.Context) error {
 
 	return c.JSON(200, schemas.RegisterResponse{
 		Username: usr.Username,
+		UUID:     usr.ID.String(),
 		Role:     schemas.RoleFromString(usr.Role),
 	})
-
 }
 
 func (app App) HandleLogin(c echo.Context) error {
@@ -89,7 +77,7 @@ func (app App) HandleLogin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
 	}
 
-	//TODO: validating things
+	// TODO: validating things
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()

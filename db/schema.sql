@@ -32,10 +32,11 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.items (
+    id integer NOT NULL,
+    uuid uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
-    quantity integer DEFAULT 0 NOT NULL,
-    id bigint NOT NULL,
-    uuid uuid
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -44,6 +45,7 @@ CREATE TABLE public.items (
 --
 
 CREATE SEQUENCE public.items_id_seq
+    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -90,6 +92,14 @@ ALTER TABLE ONLY public.items ALTER COLUMN id SET DEFAULT nextval('public.items_
 
 
 --
+-- Name: items items_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.items
+    ADD CONSTRAINT items_name_key UNIQUE (name);
+
+
+--
 -- Name: items items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -106,19 +116,19 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: users unique_role_name; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT unique_role_name UNIQUE (username, role);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
-
-
---
--- Name: users users_username_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_username_key UNIQUE (username);
 
 
 --
@@ -133,4 +143,11 @@ ALTER TABLE ONLY public.users
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250903071800'),
     ('20250903095506'),
-    ('20250904141852');
+    ('20250904141852'),
+    ('20250906171151'),
+    ('20250906172149'),
+    ('20250907133654'),
+    ('20250907140758'),
+    ('20250907141350'),
+    ('20250907141613'),
+    ('20250907154301');

@@ -3,6 +3,7 @@ package handlers
 import (
 	"time"
 
+	"github.com/bigelle/warehouse/internal/schemas"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -57,4 +58,9 @@ func UUIDFromString(str string) (pgtype.UUID, error) {
 		Bytes: u,
 		Valid: true,
 	}, nil
+}
+
+func IsAppropriateRole(v any, expected schemas.Role) bool {
+	got, ok := v.(schemas.Role)
+	return ok && expected <= got
 }

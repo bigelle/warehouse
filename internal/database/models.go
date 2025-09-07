@@ -9,10 +9,11 @@ import (
 )
 
 type Item struct {
-	Name     string
-	Quantity int32
-	ID       int64
-	Uuid     pgtype.UUID
+	ID        int32
+	Uuid      pgtype.UUID
+	Name      string
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }
 
 type SchemaMigration struct {

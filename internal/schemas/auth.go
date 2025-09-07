@@ -1,5 +1,7 @@
 package schemas
 
+import "encoding/json"
+
 type Role int
 
 const (
@@ -8,6 +10,20 @@ const (
 	RoleStocker
 	RoleAdmin
 )
+
+func (r Role) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + r.String() + `"`), nil
+}
+
+func (r *Role) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	role := RoleFromString(str)
+	*r = role
+	return nil
+}
 
 func (r Role) String() string {
 	if r <= RoleUndefined {
@@ -36,9 +52,9 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	Username string
-	UUID     string
-	Role     Role
+	Username string `json:"username"`
+	UUID     string `json:"uuid"`
+	Role     Role   `json:"role"`
 }
 
 type LoginRequest struct {
@@ -47,6 +63,6 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken string
-	Expires     int64
+	AccessToken string `json:"access_token"`
+	Expires     int64  `json:"expires"`
 }
