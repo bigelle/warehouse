@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
 )
 
@@ -39,6 +40,7 @@ func main() {
 
 	// ROUTER:
 	r := echo.New()
+	r.Use(middleware.AddTrailingSlash())
 
 	// Unprotected routes:
 	r.POST("/auth/register", app.HandleRegister)
@@ -50,7 +52,7 @@ func main() {
 	items := r.Group("/items", app.JWTMiddleware)
 	// user or higher:
 	items.GET("/", app.HandleGetItems)
-	items.GET("/:id", app.HandleGetSingleItem)
+	items.GET("/:uuid", app.HandleGetSingleItem)
 	items.GET("/:id/transactions/", ping) // TODO: view all transactions for item
 	// admin only:
 	items.POST("/", app.HandleCreateItem)

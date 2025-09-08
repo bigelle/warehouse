@@ -71,6 +71,24 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid NOT NULL,
+    item_id uuid NOT NULL,
+    type text NOT NULL,
+    amount integer DEFAULT 0 NOT NULL,
+    status text NOT NULL,
+    reason text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT transactions_status_check CHECK ((status = ANY (ARRAY['failed'::text, 'succeeded'::text]))),
+    CONSTRAINT transactions_type_check CHECK ((type = ANY (ARRAY['set'::text, 'restock'::text, 'withdraw'::text])))
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -117,6 +135,14 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: transactions transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: users unique_role_name; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -125,11 +151,35 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: items unique_uuid; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.items
+    ADD CONSTRAINT unique_uuid UNIQUE (uuid);
+
+
+--
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: transactions transactions_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_item_id_fkey FOREIGN KEY (item_id) REFERENCES public.items(uuid);
+
+
+--
+-- Name: transactions transactions_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.transactions
+    ADD CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id);
 
 
 --
@@ -152,4 +202,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250907141350'),
     ('20250907141613'),
     ('20250907154301'),
-    ('20250907162847');
+    ('20250907162847'),
+    ('20250908064850');

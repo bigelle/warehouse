@@ -13,6 +13,34 @@ import (
 	"go.uber.org/zap"
 )
 
+func (app App) HandleCreateItem(c echo.Context) error {
+	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleAdmin) {
+		return echo.ErrForbidden
+	}
+
+	var req schemas.CreateItemRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.ErrBadRequest
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+	defer cancel()
+	item, err := app.Database.CreateItem(ctx, req.Name)
+	if err != nil {
+		var uniqueErr *pgconn.PgError
+		if ok := errors.As(err, &uniqueErr); ok && uniqueErr.Code == "23505" {
+			return echo.NewHTTPError(http.StatusConflict, "item with this name already exists")
+		}
+		return err
+	}
+
+	return c.JSON(200, schemas.CreateItemResponse{
+		UUID:      item.Uuid.String(),
+		Name:      item.Name,
+		CreatedAt: item.CreatedAt.Time.Unix(),
+	})
+}
+
 func (app App) HandleGetItems(c echo.Context) error {
 	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleUser) {
 		return echo.ErrForbidden
@@ -49,9 +77,9 @@ func (app App) HandleGetItems(c echo.Context) error {
 	items := make([]schemas.Item, nFound)
 	for i := range nFound {
 		items[i] = schemas.Item{
-			UUID: found[i].Uuid.String(),
-			Name: found[i].Name,
-			// Quantity: int(found[i].Quantity),
+			UUID:     found[i].Uuid.String(),
+			Name:     found[i].Name,
+			Quantity: int(found[i].Quantity),
 		}
 	}
 	return c.JSON(200, schemas.GetItemsResponse{
@@ -60,39 +88,34 @@ func (app App) HandleGetItems(c echo.Context) error {
 	})
 }
 
-func (app App) HandleCreateItem(c echo.Context) error {
-	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleAdmin) {
+func (app App) HandleGetSingleItem(c echo.Context) error {
+	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleUser) {
 		return echo.ErrForbidden
 	}
 
-	var req schemas.CreateItemRequest
-	if err := c.Bind(&req); err != nil {
-		return echo.ErrBadRequest
-	}
-
-	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
-	defer cancel()
-	item, err := app.Database.CreateItem(ctx, req.Name)
-	if err != nil {
-		var uniqueErr *pgconn.PgError
-		if ok := errors.As(err, &uniqueErr); ok && uniqueErr.Code == "23505" {
-			return echo.NewHTTPError(http.StatusConflict, "item with this name already exists")
-		}
-		return err
-	}
-
-	return c.JSON(200, schemas.CreateItemResponse{
-		UUID:      item.Uuid.String(),
-		Name:      item.Name,
-		CreatedAt: item.CreatedAt.Time.Unix(),
-	})
-}
-
-func (app App) HandleGetSingleItem(c echo.Context) error {
 	uuid := c.Param("uuid")
 	if uuid == "" {
 		return echo.ErrBadRequest
 	}
 
-	return echo.ErrNotImplemented
+	strUuid, err := UUIDFromString(uuid)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+	defer cancel()
+	item, err := app.Database.GetItem(ctx, strUuid)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return echo.ErrNotFound
+		}
+		return err
+	}
+
+	return c.JSON(200, schemas.Item{
+		UUID:     item.Uuid.String(),
+		Name:     item.Name,
+		Quantity: int(item.Quantity),
+	})
 }

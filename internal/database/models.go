@@ -21,6 +21,17 @@ type SchemaMigration struct {
 	Version string
 }
 
+type Transaction struct {
+	ID        pgtype.UUID
+	UserID    pgtype.UUID
+	ItemID    pgtype.UUID
+	Type      string
+	Amount    int32
+	Status    string
+	Reason    pgtype.Text
+	CreatedAt pgtype.Timestamptz
+}
+
 type User struct {
 	ID           pgtype.UUID
 	Username     string
