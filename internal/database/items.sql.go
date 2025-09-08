@@ -31,7 +31,7 @@ func (q *Queries) CreateItem(ctx context.Context, name string) (CreateItemRow, e
 }
 
 const getNItemsOffset = `-- name: GetNItemsOffset :many
-SELECT id, uuid, name, created_at, updated_at
+SELECT id, uuid, name, created_at, updated_at, quantity
 FROM items
 ORDER BY id
 LIMIT $1 OFFSET $2
@@ -57,6 +57,7 @@ func (q *Queries) GetNItemsOffset(ctx context.Context, arg GetNItemsOffsetParams
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Quantity,
 		); err != nil {
 			return nil, err
 		}
@@ -66,4 +67,66 @@ func (q *Queries) GetNItemsOffset(ctx context.Context, arg GetNItemsOffsetParams
 		return nil, err
 	}
 	return items, nil
+}
+
+const restockItem = `-- name: RestockItem :one
+UPDATE items
+SET quantity = quantity + $1, updated_at = now()
+WHERE uuid = $2
+RETURNING uuid, name, quantity, updated_at
+`
+
+type RestockItemParams struct {
+	Quantity int32
+	Uuid     pgtype.UUID
+}
+
+type RestockItemRow struct {
+	Uuid      pgtype.UUID
+	Name      string
+	Quantity  int32
+	UpdatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) RestockItem(ctx context.Context, arg RestockItemParams) (RestockItemRow, error) {
+	row := q.db.QueryRow(ctx, restockItem, arg.Quantity, arg.Uuid)
+	var i RestockItemRow
+	err := row.Scan(
+		&i.Uuid,
+		&i.Name,
+		&i.Quantity,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const setItemQuantity = `-- name: SetItemQuantity :one
+UPDATE items
+SET quantity = $1, updated_at = now()
+WHERE uuid = $2
+RETURNING uuid, name, quantity, updated_at
+`
+
+type SetItemQuantityParams struct {
+	Quantity int32
+	Uuid     pgtype.UUID
+}
+
+type SetItemQuantityRow struct {
+	Uuid      pgtype.UUID
+	Name      string
+	Quantity  int32
+	UpdatedAt pgtype.Timestamptz
+}
+
+func (q *Queries) SetItemQuantity(ctx context.Context, arg SetItemQuantityParams) (SetItemQuantityRow, error) {
+	row := q.db.QueryRow(ctx, setItemQuantity, arg.Quantity, arg.Uuid)
+	var i SetItemQuantityRow
+	err := row.Scan(
+		&i.Uuid,
+		&i.Name,
+		&i.Quantity,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

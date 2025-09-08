@@ -39,19 +39,30 @@ func main() {
 
 	// ROUTER:
 	r := echo.New()
+
 	// Unprotected routes:
 	r.POST("/auth/register", app.HandleRegister)
 	r.POST("/auth/login", app.HandleLogin)
 	r.POST("/auth/refresh", app.HandleRefresh)
+
 	// Protected routes:
-	// any authorized user:
-	r.GET("/items", app.HandleGetItems, app.JWTMiddleware) // get all items, may accept offset
-	r.GET("/items/:uuid", ping)                            // get a specific item
-	r.GET("/notice", ping)                                 // see if we run out of something.  TODO: rename it
+
+	items := r.Group("/items", app.JWTMiddleware)
+	// user or higher:
+	items.GET("/", app.HandleGetItems)
+	items.GET("/:id", app.HandleGetSingleItem)
+	items.GET("/:id/transactions/", ping) // TODO: view all transactions for item
 	// admin only:
-	r.POST("/items", app.HandleCreateItem, app.JWTMiddleware) // add a new item to tracking
-	r.PATCH("/items/:id", ping)                               // change qty, description, etc.
-	r.DELETE("/items/:id", ping)                              // delete an item from tracking
+	items.POST("/", app.HandleCreateItem)
+	items.PATCH("/:id", ping)  // TODO: edit item
+	items.DELETE("/:id", ping) // TODO: delete item
+
+	transactions := r.Group("/transactions", app.JWTMiddleware)
+	// user or higher
+	transactions.GET("/", ping)    // TODO: view all transactions
+	transactions.GET("/:id", ping) // TODO: view specific one
+	// stocker or higher
+	transactions.POST("/", ping) // TODO: create one (set, restock or withdraw)
 
 	// RUN:
 	if err := r.Start(os.Getenv("WAREHOUSE_LISTEN_ADDR")); err != nil {

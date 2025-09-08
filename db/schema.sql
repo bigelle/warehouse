@@ -36,7 +36,8 @@ CREATE TABLE public.items (
     uuid uuid DEFAULT gen_random_uuid() NOT NULL,
     name text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    quantity integer DEFAULT 0 NOT NULL
 );
 
 
@@ -150,4 +151,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20250907140758'),
     ('20250907141350'),
     ('20250907141613'),
-    ('20250907154301');
+    ('20250907154301'),
+    ('20250907162847');

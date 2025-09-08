@@ -14,6 +14,7 @@ type Item struct {
 	Name      string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	Quantity  int32
 }
 
 type SchemaMigration struct {
