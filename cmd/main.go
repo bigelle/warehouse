@@ -56,8 +56,8 @@ func main() {
 	items.GET("/:id/transactions/", ping) // TODO: view all transactions for item
 	// admin only:
 	items.POST("/", app.HandleCreateItem)
-	items.PATCH("/:id", ping)  // TODO: edit item
-	items.DELETE("/:id", ping) // TODO: delete item
+	items.PATCH("/:uuid", app.HandlePatchItem) // TODO: edit item
+	items.DELETE("/:id", ping)                 // TODO: delete item
 
 	transactions := r.Group("/transactions", app.JWTMiddleware)
 	// user or higher

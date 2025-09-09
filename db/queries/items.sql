@@ -6,10 +6,10 @@ RETURNING uuid, name, created_at;
 -- name: PatchItem :one
 UPDATE items
 SET
-    name = COALESCE($1, name),
-    quantity = COALESCE($2, quantity),
+    name = COALESCE(sqlc.narg('name'), name),
+    quantity = COALESCE(sqlc.narg('quantity'), quantity),
     updated_at = now()
-WHERE id = $3
+WHERE uuid = $1 
 RETURNING uuid, name, quantity, created_at, updated_at;
 
 -- name: GetItemQuantity :one

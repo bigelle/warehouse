@@ -31,3 +31,8 @@ type GetItemsResponse struct {
 	NResults int    `json:"n_results"`
 	Items    []Item `json:"items"`
 }
+
+type PatchRequest struct {
+	Name     *string `json:"name"`
+	Quantity *int32  `json:"quantity"`
+}

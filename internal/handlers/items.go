@@ -119,3 +119,44 @@ func (app App) HandleGetSingleItem(c echo.Context) error {
 		Quantity: int(item.Quantity),
 	})
 }
+
+func (app App) HandlePatchItem(c echo.Context) error {
+	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleAdmin) {
+		return echo.ErrForbidden
+	}
+
+	strUUID := c.Param("uuid")
+	if strUUID == "" {
+		return echo.ErrBadRequest
+	}
+
+	var req schemas.PatchRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.ErrBadRequest
+	}
+
+	uuid, err := UUIDFromString(strUUID)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+	defer cancel()
+	item, err := app.Database.PatchItem(ctx, database.PatchItemParams{
+		Uuid:     uuid,
+		Name:     req.Name,
+		Quantity: req.Quantity,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return echo.ErrNotFound
+		}
+		return err
+	}
+
+	return c.JSON(200, schemas.Item{
+		UUID:     item.Uuid.String(),
+		Name:     item.Name,
+		Quantity: int(item.Quantity),
+	})
+}

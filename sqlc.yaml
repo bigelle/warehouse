@@ -8,6 +8,4 @@ sql:
         package: "database"
         out: "internal/database"
         sql_package: "pgx/v5"
-        overrides:
-          - column: "users.refresh_token"
-            go_type: "string"
+        emit_pointers_for_null_types: true

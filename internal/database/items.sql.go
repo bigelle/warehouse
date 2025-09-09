@@ -133,17 +133,17 @@ func (q *Queries) GetNItemsOffset(ctx context.Context, arg GetNItemsOffsetParams
 const patchItem = `-- name: PatchItem :one
 UPDATE items
 SET
-    name = COALESCE($1, name),
-    quantity = COALESCE($2, quantity),
+    name = COALESCE($2, name),
+    quantity = COALESCE($3, quantity),
     updated_at = now()
-WHERE id = $3
+WHERE uuid = $1 
 RETURNING uuid, name, quantity, created_at, updated_at
 `
 
 type PatchItemParams struct {
-	Name     string
-	Quantity int32
-	ID       int32
+	Uuid     pgtype.UUID
+	Name     *string
+	Quantity *int32
 }
 
 type PatchItemRow struct {
@@ -155,7 +155,7 @@ type PatchItemRow struct {
 }
 
 func (q *Queries) PatchItem(ctx context.Context, arg PatchItemParams) (PatchItemRow, error) {
-	row := q.db.QueryRow(ctx, patchItem, arg.Name, arg.Quantity, arg.ID)
+	row := q.db.QueryRow(ctx, patchItem, arg.Uuid, arg.Name, arg.Quantity)
 	var i PatchItemRow
 	err := row.Scan(
 		&i.Uuid,

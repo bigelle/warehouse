@@ -28,7 +28,7 @@ type Transaction struct {
 	Type      string
 	Amount    int32
 	Status    string
-	Reason    pgtype.Text
+	Reason    *string
 	CreatedAt pgtype.Timestamptz
 }
 

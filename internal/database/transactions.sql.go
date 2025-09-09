@@ -22,7 +22,7 @@ type CreateNewTransactionParams struct {
 	ItemID pgtype.UUID
 	Amount int32
 	Status string
-	Reason pgtype.Text
+	Reason *string
 }
 
 func (q *Queries) CreateNewTransaction(ctx context.Context, arg CreateNewTransactionParams) (interface{}, error) {
