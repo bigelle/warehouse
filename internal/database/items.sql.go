@@ -30,6 +30,16 @@ func (q *Queries) CreateItem(ctx context.Context, name string) (CreateItemRow, e
 	return i, err
 }
 
+const deleteItem = `-- name: DeleteItem :exec
+DELETE FROM items
+WHERE uuid = $1
+`
+
+func (q *Queries) DeleteItem(ctx context.Context, uuid pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteItem, uuid)
+	return err
+}
+
 const getItem = `-- name: GetItem :one
 SELECT uuid, name, quantity, created_at, updated_at
 FROM items
@@ -55,33 +65,6 @@ func (q *Queries) GetItem(ctx context.Context, uuid pgtype.UUID) (GetItemRow, er
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const getItemQuantity = `-- name: GetItemQuantity :one
-SELECT quantity
-FROM items
-WHERE uuid = $1
-`
-
-func (q *Queries) GetItemQuantity(ctx context.Context, uuid pgtype.UUID) (int32, error) {
-	row := q.db.QueryRow(ctx, getItemQuantity, uuid)
-	var quantity int32
-	err := row.Scan(&quantity)
-	return quantity, err
-}
-
-const getItemQuantityConcurrable = `-- name: GetItemQuantityConcurrable :one
-SELECT quantity
-FROM items
-WHERE uuid = $1
-FOR UPDATE
-`
-
-func (q *Queries) GetItemQuantityConcurrable(ctx context.Context, uuid pgtype.UUID) (int32, error) {
-	row := q.db.QueryRow(ctx, getItemQuantityConcurrable, uuid)
-	var quantity int32
-	err := row.Scan(&quantity)
-	return quantity, err
 }
 
 const getNItemsOffset = `-- name: GetNItemsOffset :many
@@ -162,37 +145,6 @@ func (q *Queries) PatchItem(ctx context.Context, arg PatchItemParams) (PatchItem
 		&i.Name,
 		&i.Quantity,
 		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const setItemQuantity = `-- name: SetItemQuantity :one
-UPDATE items
-SET quantity = $1, updated_at = now()
-WHERE uuid = $2
-RETURNING uuid, name, quantity, updated_at
-`
-
-type SetItemQuantityParams struct {
-	Quantity int32
-	Uuid     pgtype.UUID
-}
-
-type SetItemQuantityRow struct {
-	Uuid      pgtype.UUID
-	Name      string
-	Quantity  int32
-	UpdatedAt pgtype.Timestamptz
-}
-
-func (q *Queries) SetItemQuantity(ctx context.Context, arg SetItemQuantityParams) (SetItemQuantityRow, error) {
-	row := q.db.QueryRow(ctx, setItemQuantity, arg.Quantity, arg.Uuid)
-	var i SetItemQuantityRow
-	err := row.Scan(
-		&i.Uuid,
-		&i.Name,
-		&i.Quantity,
 		&i.UpdatedAt,
 	)
 	return i, err

@@ -40,7 +40,10 @@ func main() {
 
 	// ROUTER:
 	r := echo.New()
-	r.Use(middleware.AddTrailingSlash())
+	r.Use(
+		middleware.Recover(),
+		middleware.AddTrailingSlash(),
+	)
 
 	// Unprotected routes:
 	r.POST("/auth/register", app.HandleRegister)
@@ -53,18 +56,18 @@ func main() {
 	// user or higher:
 	items.GET("/", app.HandleGetItems)
 	items.GET("/:uuid", app.HandleGetSingleItem)
-	items.GET("/:id/transactions/", ping) // TODO: view all transactions for item
+	items.GET("/:uuid/transactions/", ping) // TODO: view all transactions for item
 	// admin only:
 	items.POST("/", app.HandleCreateItem)
-	items.PATCH("/:uuid", app.HandlePatchItem) // TODO: edit item
-	items.DELETE("/:id", ping)                 // TODO: delete item
+	items.PATCH("/:uuid", app.HandlePatchItem)
+	items.DELETE("/:uuid", app.HandleDeleteItem) // TODO: delete item
 
 	transactions := r.Group("/transactions", app.JWTMiddleware)
 	// user or higher
-	transactions.GET("/", ping)    // TODO: view all transactions
-	transactions.GET("/:id", ping) // TODO: view specific one
+	transactions.GET("/", ping)      // TODO: view all transactions
+	transactions.GET("/:uuid", ping) // TODO: view specific one
 	// stocker or higher
-	transactions.POST("/", ping) // TODO: create one (set, restock or withdraw)
+	transactions.POST("/", ping) // TODO: create one (restock or withdraw)
 
 	// RUN:
 	if err := r.Start(os.Getenv("WAREHOUSE_LISTEN_ADDR")); err != nil {

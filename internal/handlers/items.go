@@ -160,3 +160,31 @@ func (app App) HandlePatchItem(c echo.Context) error {
 		Quantity: int(item.Quantity),
 	})
 }
+
+func (app App) HandleDeleteItem(c echo.Context) error {
+	if !IsAppropriateRole(c.Get("userRole"), schemas.RoleAdmin) {
+		return echo.ErrForbidden
+	}
+
+	strUUID := c.Param("uuid")
+	if strUUID == "" {
+		return echo.ErrBadRequest
+	}
+
+	uuid, err := UUIDFromString(strUUID)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
+	defer cancel()
+	err = app.Database.DeleteItem(ctx, uuid)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return echo.ErrNotFound
+		}
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
