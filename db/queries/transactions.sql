@@ -1,7 +1,7 @@
 -- name: CreateNewTransaction :one
-INSERT INTO transactions (user_id, item_id, amount, status, reason)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING (id, created_at);
+INSERT INTO transactions (user_id, item_id, type, amount, status, reason)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, created_at;
 
 -- name: GetTransactionsForItem :many
 SELECT *

@@ -14,6 +14,18 @@ SELECT uuid, name, quantity, created_at, updated_at
 FROM items
 WHERE uuid = $1;
 
+-- name: GetItemQuantity :one
+SELECT uuid, quantity
+FROM items
+WHERE uuid = $1;
+
+-- name: SetItemQuantity :exec
+UPDATE items
+SET
+    quantity = $1,
+    updated_at = now()
+WHERE uuid = $2;
+
 -- name: PatchItem :one
 UPDATE items
 SET

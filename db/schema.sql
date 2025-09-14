@@ -1,6 +1,7 @@
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -192,14 +193,6 @@ ALTER TABLE ONLY public.transactions
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20250903071800'),
-    ('20250903095506'),
-    ('20250904141852'),
-    ('20250906171151'),
-    ('20250906172149'),
-    ('20250907133654'),
-    ('20250907140758'),
-    ('20250907141350'),
     ('20250907141613'),
     ('20250907154301'),
     ('20250907162847'),

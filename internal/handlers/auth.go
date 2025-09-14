@@ -37,7 +37,7 @@ func (app App) HandleRegister(c echo.Context) error {
 	// creating user
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	usr, err := app.Database.CreateUser(ctx,
+	usr, err := app.DB.Queries.CreateUser(ctx,
 		database.CreateUserParams{
 			Username:     req.Username,
 			PasswordHash: hash,
@@ -81,7 +81,7 @@ func (app App) HandleLogin(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	usr, err := app.Database.GetUserByUsername(ctx, req.Username)
+	usr, err := app.DB.Queries.GetUserByUsername(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "wrong username or password")
@@ -106,7 +106,7 @@ func (app App) HandleLogin(c echo.Context) error {
 	cancel()
 	ctx, cancel = context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	_, err = app.Database.SetRefreshToken(ctx, database.SetRefreshTokenParams{
+	_, err = app.DB.Queries.SetRefreshToken(ctx, database.SetRefreshTokenParams{
 		RefreshToken: refresh,
 		ID:           usr.ID,
 	})
@@ -166,7 +166,7 @@ func (app App) HandleRefresh(c echo.Context) error {
 	// Generating access:
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	usrRole, err := app.Database.GetUserRole(ctx, uuid)
+	usrRole, err := app.DB.Queries.GetUserRole(ctx, uuid)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return echo.ErrUnauthorized

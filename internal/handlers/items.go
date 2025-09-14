@@ -25,7 +25,7 @@ func (app App) HandleCreateItem(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	item, err := app.Database.CreateItem(ctx, req.Name)
+	item, err := app.DB.Queries.CreateItem(ctx, req.Name)
 	if err != nil {
 		var uniqueErr *pgconn.PgError
 		if ok := errors.As(err, &uniqueErr); ok && uniqueErr.Code == "23505" {
@@ -57,7 +57,7 @@ func (app App) HandleGetItems(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	found, err := app.Database.GetNItemsOffset(ctx, database.GetNItemsOffsetParams{
+	found, err := app.DB.Queries.GetNItemsOffset(ctx, database.GetNItemsOffsetParams{
 		Limit:  int32(req.Limit),
 		Offset: int32(req.Offset),
 	})
@@ -105,7 +105,7 @@ func (app App) HandleGetSingleItem(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	item, err := app.Database.GetItem(ctx, strUuid)
+	item, err := app.DB.Queries.GetItem(ctx, strUuid)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return echo.ErrNotFound
@@ -142,7 +142,7 @@ func (app App) HandlePatchItem(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	item, err := app.Database.PatchItem(ctx, database.PatchItemParams{
+	item, err := app.DB.Queries.PatchItem(ctx, database.PatchItemParams{
 		Uuid:     uuid,
 		Name:     req.Name,
 		Quantity: req.Quantity,
@@ -178,7 +178,7 @@ func (app App) HandleDeleteItem(c echo.Context) error {
 
 	ctx, cancel := context.WithTimeout(c.Request().Context(), TimeoutDatabase)
 	defer cancel()
-	err = app.Database.DeleteItem(ctx, uuid)
+	err = app.DB.Queries.DeleteItem(ctx, uuid)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return echo.ErrNotFound

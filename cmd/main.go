@@ -30,12 +30,15 @@ func main() {
 		logger.Fatal("failed to connect to the database", zap.Error(err))
 	}
 	defer conn.Close(ctx)
-	db := database.New(conn)
+	queries := database.New(conn)
 
 	// APP:
 	app := handlers.App{
-		Database: db,
-		Logger:   logger,
+		DB: handlers.Database{
+			Conn:    conn,
+			Queries: queries,
+		},
+		Logger: logger,
 	}
 
 	// ROUTER:
@@ -67,10 +70,10 @@ func main() {
 	transactions.GET("/", ping)      // TODO: view all transactions
 	transactions.GET("/:uuid", ping) // TODO: view specific one
 	// stocker or higher
-	transactions.POST("/", ping) // TODO: create one (restock or withdraw)
+	transactions.POST("/", app.HandleCreateTransaction) // TODO: create one (restock or withdraw)
 
 	// RUN:
-	if err := r.Start(os.Getenv("WAREHOUSE_LISTEN_ADDR")); err != nil {
+	if err := r.Start(os.Getenv("SERVER_LISTEN_ADDR")); err != nil {
 		logger.Fatal("server error", zap.Error(err))
 	}
 }
