@@ -20,11 +20,22 @@ type CreateTransactionRequest struct {
 	Amount   int             `validate:"required, min=1" json:"amount"`
 }
 
-type CreateTransactionResponse struct {
-	Type            TransactionType   `json:"type"`
-	ItemUUID        string            `json:"item_uuid"`
-	TransactionUUID string            `json:"transaction_uuid"`
-	Amount          int               `json:"amount"`
-	Status          TransactionStatus `json:"status"`
-	CreatedAt       int64             `json:"created_at"`
+type GetAllTransactionsRequest struct {
+	Offset int `json:"offset" form:"offset"`
+	Limit  int `json:"limit" form:"limit"`
+}
+
+type GetAllTransactionsResponse struct {
+	NResult      int           `json:"n_result"`
+	Transactions []Transaction `json:"transactions"`
+}
+
+type Transaction struct {
+	Type      TransactionType   `json:"type"`
+	UUID      string            `json:"uuid"`
+	OwnerUUID string            `json:"owner_uuid"`
+	ItemUUID  string            `json:"item_uuid"`
+	Amount    int               `json:"amount"`
+	Status    TransactionStatus `json:"status"`
+	CreatedAt int64             `json:"created_at"`
 }

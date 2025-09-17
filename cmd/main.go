@@ -45,8 +45,8 @@ func main() {
 	r := echo.New()
 	r.Use(
 		middleware.Recover(),
-		middleware.AddTrailingSlash(),
 	)
+	r.Pre(middleware.RemoveTrailingSlash())
 
 	// Unprotected routes:
 	r.POST("/auth/register", app.HandleRegister)
@@ -57,28 +57,22 @@ func main() {
 
 	items := r.Group("/items", app.JWTMiddleware)
 	// user or higher:
-	items.GET("/", app.HandleGetItems)
+	items.GET("", app.HandleGetItems)
 	items.GET("/:uuid", app.HandleGetSingleItem)
-	items.GET("/:uuid/transactions/", ping) // TODO: view all transactions for item
 	// admin only:
-	items.POST("/", app.HandleCreateItem)
+	items.POST("", app.HandleCreateItem)
 	items.PATCH("/:uuid", app.HandlePatchItem)
-	items.DELETE("/:uuid", app.HandleDeleteItem) // TODO: delete item
+	items.DELETE("/:uuid", app.HandleDeleteItem)
 
 	transactions := r.Group("/transactions", app.JWTMiddleware)
 	// user or higher
-	transactions.GET("/", ping)      // TODO: view all transactions
-	transactions.GET("/:uuid", ping) // TODO: view specific one
+	transactions.GET("", app.HandleGetAllTransactions)
+	transactions.GET("/:uuid", app.HandleGetTransaction)
 	// stocker or higher
-	transactions.POST("/", app.HandleCreateTransaction) // TODO: create one (restock or withdraw)
+	transactions.POST("", app.HandleCreateTransaction)
 
 	// RUN:
 	if err := r.Start(os.Getenv("SERVER_LISTEN_ADDR")); err != nil {
 		logger.Fatal("server error", zap.Error(err))
 	}
-}
-
-func ping(ctx echo.Context) error {
-	ctx.JSON(200, "pong")
-	return nil
 }

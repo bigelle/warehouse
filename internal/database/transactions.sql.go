@@ -45,9 +45,69 @@ func (q *Queries) CreateNewTransaction(ctx context.Context, arg CreateNewTransac
 	return i, err
 }
 
-const getTransactionsForItem = `-- name: GetTransactionsForItem :many
+const getAllTransactions = `-- name: GetAllTransactions :many
+SELECT id, user_id, item_id, type, amount, status, reason, created_at FROM transactions
+LIMIT $1 OFFSET $2
+`
+
+type GetAllTransactionsParams struct {
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetAllTransactions(ctx context.Context, arg GetAllTransactionsParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getAllTransactions, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ItemID,
+			&i.Type,
+			&i.Amount,
+			&i.Status,
+			&i.Reason,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransaction = `-- name: GetTransaction :one
 SELECT id, user_id, item_id, type, amount, status, reason, created_at
 FROM transactions
+WHERE id = $1
+`
+
+func (q *Queries) GetTransaction(ctx context.Context, id pgtype.UUID) (Transaction, error) {
+	row := q.db.QueryRow(ctx, getTransaction, id)
+	var i Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ItemID,
+		&i.Type,
+		&i.Amount,
+		&i.Status,
+		&i.Reason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getTransactionsForItem = `-- name: GetTransactionsForItem :many
+SELECT id, user_id, item_id, type, amount, status, reason, created_at FROM transactions
 WHERE item_id = $1
 LIMIT $2 OFFSET $3
 `
@@ -60,6 +120,47 @@ type GetTransactionsForItemParams struct {
 
 func (q *Queries) GetTransactionsForItem(ctx context.Context, arg GetTransactionsForItemParams) ([]Transaction, error) {
 	rows, err := q.db.Query(ctx, getTransactionsForItem, arg.ItemID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Transaction
+	for rows.Next() {
+		var i Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.ItemID,
+			&i.Type,
+			&i.Amount,
+			&i.Status,
+			&i.Reason,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTransactionsForUser = `-- name: GetTransactionsForUser :many
+SELECT id, user_id, item_id, type, amount, status, reason, created_at FROM transactions
+WHERE user_id = $1
+LIMIT $2 OFFSET $3
+`
+
+type GetTransactionsForUserParams struct {
+	UserID pgtype.UUID
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetTransactionsForUser(ctx context.Context, arg GetTransactionsForUserParams) ([]Transaction, error) {
+	rows, err := q.db.Query(ctx, getTransactionsForUser, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
