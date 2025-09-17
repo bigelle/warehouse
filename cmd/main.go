@@ -15,7 +15,10 @@ import (
 
 func main() {
 	// LOGGER:
-	logger, _ := zap.NewProduction()
+	logger, _ := zap.NewProduction(
+		zap.AddStacktrace(zap.FatalLevel),
+		zap.WithCaller(false),
+	)
 	defer logger.Sync()
 
 	// ENVIRONMENT:
@@ -45,6 +48,7 @@ func main() {
 	r := echo.New()
 	r.Use(
 		middleware.Recover(),
+		app.LoggingMiddleware,
 	)
 	r.Pre(middleware.RemoveTrailingSlash())
 
