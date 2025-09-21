@@ -1,14 +1,15 @@
 module github.com/bigelle/warehouse
 
-go 1.24.4
+go 1.25.1
 
 require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
+	github.com/bigelle/ratebucket v0.0.0-20250920133012-11b6d80d353a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/bigelle/ratebucket"
 	"github.com/bigelle/warehouse/internal/database"
 	"github.com/bigelle/warehouse/internal/handlers"
 	"github.com/jackc/pgx/v5"
@@ -35,6 +36,23 @@ func main() {
 	defer conn.Close(ctx)
 	queries := database.New(conn)
 
+	// RATE LIMITER:
+	authRL := handlers.RateLimiter{
+		Pool: ratebucket.NewPoolConfig(ratebucket.PoolConfig{
+			InitialTokens: 5,
+			Capacity:      5,
+			RefillRate:    1.0 / 12, // 1 = 60/min, 1\12 = 5/min
+		}),
+	}
+
+	RL := handlers.RateLimiter{
+		Pool: ratebucket.NewPoolConfig(ratebucket.PoolConfig{
+			InitialTokens: 100,
+			Capacity:      100,
+			RefillRate:    1.0,
+		}),
+	}
+
 	// APP:
 	app := handlers.App{
 		DB: handlers.Database{
@@ -53,13 +71,14 @@ func main() {
 	r.Pre(middleware.RemoveTrailingSlash())
 
 	// Unprotected routes:
-	r.POST("/auth/register", app.HandleRegister)
-	r.POST("/auth/login", app.HandleLogin)
-	r.POST("/auth/refresh", app.HandleRefresh)
+	auth := r.Group("/auth", authRL.Middleware)
+	auth.POST("/register", app.HandleRegister)
+	auth.POST("/login", app.HandleLogin)
+	auth.POST("/refresh", app.HandleRefresh)
 
 	// Protected routes:
 
-	items := r.Group("/items", app.JWTMiddleware)
+	items := r.Group("/items", RL.Middleware, app.JWTMiddleware)
 	// user or higher:
 	items.GET("", app.HandleGetItems)
 	items.GET("/:uuid", app.HandleGetSingleItem)

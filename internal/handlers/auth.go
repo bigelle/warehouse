@@ -23,7 +23,6 @@ const (
 func (app App) HandleRegister(c echo.Context) error {
 	var req schemas.RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		app.Logger.Error("binding error", zap.Error(err))
 		return echo.ErrBadRequest
 	}
 	// TODO: validating things
@@ -55,11 +54,9 @@ func (app App) HandleRegister(c echo.Context) error {
 			case "23502":
 				return echo.NewHTTPError(http.StatusBadRequest, "null value")
 			default:
-				app.Logger.Error("unexpected database error while creating user", zap.String("code", pgErr.Code))
 				return err // 500 for now, maybe I'll leave it like that
 			}
 		}
-		app.Logger.Error("unexpected database error while creating user", zap.String("code", pgErr.Code))
 		return err
 	}
 
@@ -73,7 +70,6 @@ func (app App) HandleRegister(c echo.Context) error {
 func (app App) HandleLogin(c echo.Context) error {
 	var req schemas.LoginRequest
 	if err := c.Bind(&req); err != nil {
-		app.Logger.Error("binding error", zap.Error(err))
 		return echo.NewHTTPError(http.StatusBadRequest, "bad request")
 	}
 
